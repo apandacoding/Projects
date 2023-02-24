@@ -1,0 +1,59 @@
+import requests
+import json
+
+# Step 1: Authentication
+client_id = 'your_client_id'
+client_secret = 'your_client_secret'
+auth_url = 'https://accounts.spotify.com/api/token'
+auth_response = requests.post(auth_url, {
+    'grant_type': 'client_credentials',
+    'client_id': client_id,
+    'client_secret': client_secret,
+})
+auth_response_data = auth_response.json()
+access_token = auth_response_data['access_token']
+headers = {
+    'Authorization': f'Bearer {access_token}',
+    'Content-Type': 'application/json',
+}
+
+# Step 2: Collect User Data
+favorite_artists = ['artist_1', 'artist_2']
+favorite_genres = ['genre_1', 'genre_2']
+favorite_songs = ['song_1', 'song_2']
+
+# Step 3: Analyze User Data
+recommendations_url = 'https://api.spotify.com/v1/recommendations'
+params = {
+    'seed_artists': ','.join(favorite_artists),
+    'seed_genres': ','.join(favorite_genres),
+    'seed_tracks': ','.join(favorite_songs),
+}
+response = requests.get(recommendations_url, headers=headers, params=params)
+response_data = response.json()
+recommended_tracks = [track['uri'] for track in response_data['tracks']]
+
+# Step 4: Generate Playlist
+playlist_name = 'My Personalized Playlist'
+playlist_description = 'A playlist generated based on my music taste'
+playlist_url = 'https://api.spotify.com/v1/users/{user_id}/playlists'
+user_id_url = 'https://api.spotify.com/v1/me'
+user_response = requests.get(user_id_url, headers=headers)
+user_data = user_response.json()
+user_id = user_data['id']
+playlist_response = requests.post(
+    playlist_url.format(user_id=user_id),
+    headers=headers,
+    data=json.dumps({
+        'name': playlist_name,
+        'description': playlist_description,
+        'public': False,
+    }),
+)
+playlist_data = playlist_response.json()
+playlist_id = playlist_data['id']
+add_tracks_url = f'https://api.spotify.com/v1/playlists/{playlist_id}/tracks'
+add_tracks_response = requests.post(
+    add_tracks_url,
+    headers=headers,
+    data=json.dumps({
